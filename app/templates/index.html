@@ -12,15 +12,13 @@ small{color:#999}
 </style></head>
 <body>
 <h1>🎬 AI Clipper</h1>
-<p>Tempel link YouTube/TikTok <b>atau</b> upload video → otomatis dicari momen paling keras/seru → jadi klip vertikal 9:16 siap upload Shorts/Reels/TikTok.</p>
+<p>Tempel link YouTube/TikTok <b>atau</b> upload video → otomatis dicari momen <b>Seru, Menegangkan, dan Lucu</b> dari pola audionya → jadi klip vertikal 9:16. Kalau ada facecam, otomatis dibuat juga versi <b>Facecam Split</b> (gameplay di atas, facecam diperbesar di bawah).</p>
 <div class="card">
 <form id="f">
 <label>Link YouTube / TikTok</label>
 <input name="url" placeholder="https://www.youtube.com/watch?v=...">
 <label>atau Upload Video (mp4, maks 500MB)</label>
 <input type="file" name="file" accept="video/*">
-<label>Judul / Hook (muncul di atas klip)</label>
-<input name="title" placeholder="MOMEN PALING GILA!">
 <div class="row">
 <div><label>Durasi klip (detik)</label><input name="clip_len" type="number" value="45" min="15" max="90"></div>
 <div><label>Jumlah klip</label><input name="top_n" type="number" value="3" min="1" max="5"></div>
@@ -41,8 +39,8 @@ document.getElementById('f').onsubmit=async e=>{
   const txt=await res.text();
   let d; try{ d=JSON.parse(txt); }catch(_){ throw new Error('Server membalas tidak normal (HTTP '+res.status+'). Coba lagi sebentar, atau pakai Upload File.'); }
   if(!res.ok) throw new Error(d.error||'Gagal');
-  s.textContent='✅ Selesai! Durasi sumber: '+d.duration+' detik';
-  r.innerHTML=d.clips.map((c,i)=>`<div class="clip"><b>Klip ${i+1}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a></div>`).join('');
+  s.textContent='✅ Selesai! Durasi sumber: '+d.duration+' detik'+(d.facecam?' — facecam terdeteksi, versi split ikut dibuat':' — facecam tidak terdeteksi, hanya versi vertikal');
+  r.innerHTML=d.clips.map((c,i)=>`<div class="clip"><b>Klip ${i+1} — ${c.kind||'Vertikal'}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a></div>`).join('');
  }catch(err){ s.textContent='❌ '+err.message; }
 };
 </script>

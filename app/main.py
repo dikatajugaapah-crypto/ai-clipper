@@ -3,7 +3,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
-from .clipper import DATA, UPLOADS, OUTPUTS, detect_highlights, make_vertical_clip, download_youtube, probe_duration
+from .clipper import DATA, UPLOADS, OUTPUTS, detect_highlights, make_vertical_clip, make_facecam_clip, detect_facecam, download_youtube, probe_duration
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
@@ -32,7 +32,6 @@ def health():
 def clip():
     try:
         job_id = uuid.uuid4().hex[:10]
-        title = (request.form.get("title") or "").strip()
         clip_len = min(int(request.form.get("clip_len") or 45), 90)
         top_n = min(int(request.form.get("top_n") or 3), 5)
         src = None
@@ -52,12 +51,20 @@ def clip():
 
         duration = probe_duration(src)
         moments = detect_highlights(str(src), top_n=top_n, clip_len=clip_len)
+        cam = detect_facecam(str(src))
         clips = []
         for i, m in enumerate(moments, 1):
-            out = make_vertical_clip(str(src), m["start"], m["duration"], title=title)
+            out = make_vertical_clip(str(src), m["start"], m["duration"])
             clips.append({"file": out.name, "download": f"/outputs/{out.name}",
-                          "start": m["start"], "label": m["label"], "score": m["score"]})
-        return jsonify(job_id=job_id, duration=round(duration), clips=clips)
+                          "start": m["start"], "label": m["label"], "score": m["score"],
+                          "category": m.get("category", ""), "kind": "Vertikal"})
+            if cam:
+                out2 = make_facecam_clip(str(src), m["start"], m["duration"], cam)
+                clips.append({"file": out2.name, "download": f"/outputs/{out2.name}",
+                              "start": m["start"], "label": m["label"] + " — versi Facecam Split",
+                              "score": m["score"], "category": m.get("category", ""),
+                              "kind": "Facecam Split (gameplay atas + facecam bawah)"})
+        return jsonify(job_id=job_id, duration=round(duration), facecam=bool(cam), clips=clips)
     except Exception as e:
         return jsonify(error=str(e)[:800]), 500
 
