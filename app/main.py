@@ -3,7 +3,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import HTTPException
-from .clipper import DATA, UPLOADS, OUTPUTS, detect_highlights, make_vertical_clip, make_facecam_clip, detect_facecam, download_youtube, probe_duration
+from .clipper import DATA, UPLOADS, OUTPUTS, detect_highlights, make_vertical_clip, make_facecam_clip, detect_facecam, download_youtube, probe_duration, make_metadata, fetch_source_title
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500MB
@@ -37,13 +37,16 @@ def clip():
         src = None
 
         url = (request.form.get("url") or "").strip()
+        source_title = ""
         if url:
             if not any(x in url for x in ("youtube.com", "youtu.be", "tiktok.com")):
                 return jsonify(error="URL hanya YouTube / TikTok"), 400
+            source_title = fetch_source_title(url)
             src = download_youtube(url, job_id)
         elif "file" in request.files and request.files["file"].filename:
             f = request.files["file"]
             name = secure_filename(f.filename) or "video.mp4"
+            source_title = Path(name).stem.replace("-", " ").replace("_", " ")
             src = UPLOADS / f"{job_id}-{name}"
             f.save(src)
         else:
@@ -57,13 +60,15 @@ def clip():
             out = make_vertical_clip(str(src), m["start"], m["duration"])
             clips.append({"file": out.name, "download": f"/outputs/{out.name}",
                           "start": m["start"], "label": m["label"], "score": m["score"],
-                          "category": m.get("category", ""), "kind": "Vertikal"})
+                          "category": m.get("category", ""), "kind": "Vertikal",
+                          "metadata": make_metadata(m.get("category", ""), source_title, "Vertikal")})
             if cam:
                 out2 = make_facecam_clip(str(src), m["start"], m["duration"], cam)
                 clips.append({"file": out2.name, "download": f"/outputs/{out2.name}",
                               "start": m["start"], "label": m["label"] + " — versi Facecam Split",
                               "score": m["score"], "category": m.get("category", ""),
-                              "kind": "Facecam Split (gameplay atas + facecam bawah)"})
+                              "kind": "Facecam Split (gameplay atas + facecam bawah)",
+                              "metadata": make_metadata(m.get("category", ""), source_title, "Facecam Split")})
         return jsonify(job_id=job_id, duration=round(duration), facecam=bool(cam), clips=clips)
     except Exception as e:
         return jsonify(error=str(e)[:800]), 500

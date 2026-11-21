@@ -111,6 +111,52 @@ def detect_highlights(path, top_n=3, clip_len=45):
     picks.sort(key=lambda x: x["start"])
     return picks[:top_n]
 
+# ---------- Rekomendasi judul / deskripsi / hashtag / tags ----------
+_STOP = set("yang dan di ke dari ini itu saat lagi video full part live streaming - _ . , ! ? ( ) [ ]".split())
+
+def _keywords(text, max_n=6):
+    words, out = re.findall(r"[A-Za-z0-9]+", (text or "").lower()), []
+    for w in words:
+        if len(w) > 2 and w not in _STOP and w not in out:
+            out.append(w)
+        if len(out) >= max_n:
+            break
+    return out
+
+def make_metadata(category, source_title="", kind="Vertikal"):
+    base = re.sub(r"[<>&\"']", "", (source_title or "Momen Terbaik")).strip()[:70] or "Momen Terbaik"
+    kw = _keywords(source_title)
+    cat = category if category in ("Seru", "Menegangkan", "Lucu") else "Seru"
+    titles = {
+        "Lucu": [f"Auto Ngakak! {base} 😂", f"Momen Paling Lucu dari {base} 🤣", f"Ngakak Terus! {base} 😆"],
+        "Menegangkan": [f"Detik-Detik Menegangkan! {base} 😱", f"Hampir Saja! {base} 🔥", f"Tegang Banget! {base} 😨"],
+        "Seru": [f"Momen Paling Seru! {base} 🔥", f"Gila, Seru Banget! {base} 🤯", f"Highlight Terbaik: {base} ⚡"],
+    }[cat]
+    if "Facecam" in kind:
+        titles = [t + " | Reaksi Facecam" for t in titles]
+    tag_base = {
+        "Lucu": ["lucu", "ngakak", "momen lucu", "funny moments", "komedi", "hiburan"],
+        "Menegangkan": ["menegangkan", "detik detik menegangkan", "jumpscare moment", "tegang", "viral"],
+        "Seru": ["momen seru", "highlight", "best moments", "seru banget", "viral", "fyp"],
+    }[cat]
+    tags = list(dict.fromkeys(tag_base + kw + ["shorts", "youtube shorts", "tiktok", "reels", "clip", "indonesia"]))
+    hashtags = ["#shorts", "#fyp", "#viral"] + [f"#{t.replace(' ', '')}" for t in tag_base[:3]] + [f"#{k}" for k in kw[:3]]
+    hashtags = list(dict.fromkeys(hashtags))
+    desc = (f"{titles[0]}\n\n"
+            f"Klip {cat.lower()} pilihan AI dari video: {base}. "
+            f"Tonton sampai habis, momen terbaiknya di akhir!\n"
+            f"Follow / Subscribe untuk klip seru setiap hari 🔔\n\n"
+            + " ".join(hashtags))
+    return {"titles": titles, "title": titles[0], "description": desc,
+            "hashtags": hashtags, "tags": tags}
+
+def fetch_source_title(url):
+    try:
+        out = run(f'yt-dlp --no-playlist --print title "{url}"', timeout=60)
+        return out.strip().splitlines()[0] if out.strip() else ""
+    except Exception:
+        return ""
+
 # ---------- Deteksi facecam (wajah statis di posisi tetap) ----------
 def detect_facecam(path):
     """

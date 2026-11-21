@@ -9,6 +9,10 @@ button{background:#ff3b5c;border:0;font-weight:700;cursor:pointer}
 label{font-size:14px;color:#bbb}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 a{color:#6ee7ff} .clip{padding:10px 0;border-top:1px solid #2a2e38}
 small{color:#999}
+.meta{background:#12141a;border:1px solid #262a35;border-radius:10px;padding:10px;margin:8px 0;text-align:left}
+.meta p{margin:6px 0;white-space:pre-wrap;word-break:break-word;font-size:14px}
+.meta b{color:#ffb3c0}
+.copy{width:auto;padding:4px 10px;margin:2px 0;font-size:12px;background:#2a2e38}
 </style></head>
 <body>
 <h1>🎬 AI Clipper</h1>
@@ -30,6 +34,13 @@ small{color:#999}
 </div>
 <p><small>Catatan: Render free tier akan sleep setelah idle &amp; file klip hilang saat restart. Untuk produksi pakai plan berbayar / disk persisten. Gunakan hanya video milik sendiri / yang kamu punya haknya.</small></p>
 <script>
+window.cp=async(i,k,btn)=>{
+ const m=(window._md||[])[i]||{};
+ let v=m[k]||'';
+ if(k==='hashtags') v=(m.hashtags||[]).join(' ');
+ if(k==='tags') v=(m.tags||[]).join(', ');
+ try{ await navigator.clipboard.writeText(v); btn.textContent='✅ Tersalin'; setTimeout(()=>btn.textContent='📋 Salin',1500);}catch(_){ prompt('Salin manual:',v); }
+};
 document.getElementById('f').onsubmit=async e=>{
  e.preventDefault();
  const s=document.getElementById('status'),r=document.getElementById('result');
@@ -40,7 +51,19 @@ document.getElementById('f').onsubmit=async e=>{
   let d; try{ d=JSON.parse(txt); }catch(_){ throw new Error('Server membalas tidak normal (HTTP '+res.status+'). Coba lagi sebentar, atau pakai Upload File.'); }
   if(!res.ok) throw new Error(d.error||'Gagal');
   s.textContent='✅ Selesai! Durasi sumber: '+d.duration+' detik'+(d.facecam?' — facecam terdeteksi, versi split ikut dibuat':' — facecam tidak terdeteksi, hanya versi vertikal');
-  r.innerHTML=d.clips.map((c,i)=>`<div class="clip"><b>Klip ${i+1} — ${c.kind||'Vertikal'}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a></div>`).join('');
+  window._md=d.clips.map(c=>c.metadata||{});
+  r.innerHTML=d.clips.map((c,i)=>{const m=c.metadata||{};return `<div class="clip"><b>Klip ${i+1} — ${c.kind||'Vertikal'}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a>
+  <div class="meta">
+    <p><b>Judul utama:</b> ${m.title||''}</p>
+    <p><b>Alternatif judul:</b><br>${(m.titles||[]).slice(1).join('<br>')}</p>
+    <button class="copy" onclick="cp(${i},'title',this)">📋 Salin Judul</button>
+    <p><b>Deskripsi:</b><br>${(m.description||'').replace(/\n/g,'<br>')}</p>
+    <button class="copy" onclick="cp(${i},'description',this)">📋 Salin Deskripsi</button>
+    <p><b>Hashtag:</b> ${(m.hashtags||[]).join(' ')}</p>
+    <button class="copy" onclick="cp(${i},'hashtags',this)">📋 Salin Hashtag</button>
+    <p><b>Tags:</b> ${(m.tags||[]).join(', ')}</p>
+    <button class="copy" onclick="cp(${i},'tags',this)">📋 Salin Tags</button>
+  </div></div>`}).join('');
  }catch(err){ s.textContent='❌ '+err.message; }
 };
 </script>
