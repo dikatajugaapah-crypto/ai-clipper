@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Clipper — Potong Video Jadi Shorts Vertikal</title>
+<style>
+body{font-family:system-ui;background:#0f1115;color:#f2f2f2;max-width:760px;margin:0 auto;padding:24px}
+.card{background:#1a1d24;border:1px solid #2a2e38;border-radius:16px;padding:20px;margin:16px 0}
+input,button{width:100%;padding:12px;border-radius:10px;border:1px solid #333;background:#111;color:#fff;margin:6px 0;box-sizing:border-box}
+button{background:#ff3b5c;border:0;font-weight:700;cursor:pointer}
+label{font-size:14px;color:#bbb}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+a{color:#6ee7ff} .clip{padding:10px 0;border-top:1px solid #2a2e38}
+small{color:#999}
+</style></head>
+<body>
+<h1>🎬 AI Clipper</h1>
+<p>Tempel link YouTube/TikTok <b>atau</b> upload video → otomatis dicari momen paling keras/seru → jadi klip vertikal 9:16 siap upload Shorts/Reels/TikTok.</p>
+<div class="card">
+<form id="f">
+<label>Link YouTube / TikTok</label>
+<input name="url" placeholder="https://www.youtube.com/watch?v=...">
+<label>atau Upload Video (mp4, maks 500MB)</label>
+<input type="file" name="file" accept="video/*">
+<label>Judul / Hook (muncul di atas klip)</label>
+<input name="title" placeholder="MOMEN PALING GILA!">
+<div class="row">
+<div><label>Durasi klip (detik)</label><input name="clip_len" type="number" value="45" min="15" max="90"></div>
+<div><label>Jumlah klip</label><input name="top_n" type="number" value="3" min="1" max="5"></div>
+</div>
+<button type="submit">✂️ Buat Klip Sekarang</button>
+</form>
+<p id="status"></p>
+<div id="result"></div>
+</div>
+<p><small>Catatan: Render free tier akan sleep setelah idle &amp; file klip hilang saat restart. Untuk produksi pakai plan berbayar / disk persisten. Gunakan hanya video milik sendiri / yang kamu punya haknya.</small></p>
+<script>
+document.getElementById('f').onsubmit=async e=>{
+ e.preventDefault();
+ const s=document.getElementById('status'),r=document.getElementById('result');
+ s.textContent='⏳ Memproses... download, deteksi momen, render vertikal. Bisa 2-5 menit.'; r.innerHTML='';
+ try{
+  const res=await fetch('/api/clip',{method:'POST',body:new FormData(e.target)});
+  const d=await res.json();
+  if(!res.ok) throw new Error(d.error||'Gagal');
+  s.textContent='✅ Selesai! Durasi sumber: '+d.duration+' detik';
+  r.innerHTML=d.clips.map((c,i)=>`<div class="clip"><b>Klip ${i+1}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a></div>`).join('');
+ }catch(err){ s.textContent='❌ '+err.message; }
+};
+</script>
+</body></html>
