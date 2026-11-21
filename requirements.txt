@@ -1,6 +1,7 @@
 Flask==3.0.3
 gunicorn==22.0.0
 yt-dlp>=2025.01.01
+curl-cffi>=0.7
 requests==2.32.3
 numpy>=1.26
 opencv-python-headless>=4.9,<5

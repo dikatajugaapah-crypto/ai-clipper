@@ -239,18 +239,35 @@ def make_facecam_clip(src, start, duration, cam, out_name=None):
         f'-c:v libx264 -preset veryfast -crf 23 -c:a aac -b:a 128k -movflags +faststart "{out}"')
     return out
 
-def download_youtube(url, job_id):
+def download_youtube(url, job_id, cookies_path=None):
+    """Coba berurutan beberapa strategi client — YouTube sering menolak satu client tapi menerima client lain."""
     out_tmpl = str(UPLOADS / f"{job_id}.%(ext)s")
-    try:
-        run(f'yt-dlp -f "bv*[height<=720]+ba/b[height<=720]/b[height<=720]" --merge-output-format mp4 '
-            f'--no-playlist --retries 3 --extractor-args "youtube:player_client=android,web" '
-            f'-o "{out_tmpl}" "{url}"')
-    except RuntimeError as e:
-        msg = str(e)
-        if any(k in msg for k in ("Precondition check failed", "Sign in to confirm", "only images are available", "Requested format is not available")):
-            raise RuntimeError("YouTube menolak download dari IP server (proteksi bot YouTube). "
-                               "Solusinya: download video itu di HP/komputer kamu, lalu pakai tombol Upload File di halaman ini.")
-        raise RuntimeError("Download dari link gagal: " + msg[-400:])
-    for f in UPLOADS.glob(f"{job_id}.*"):
-        return f
-    raise RuntimeError("Download gagal: file tidak ditemukan")
+    fmt = 'bv*[height<=720]+ba/b[height<=720]/b[height<=720]/b'
+    cookie_arg = f' --cookies "{cookies_path}"' if cookies_path else ""
+    import shutil
+    js_arg = "--js-runtimes node" if shutil.which("node") else ("--js-runtimes deno" if shutil.which("deno") else "")
+    strategies = [
+        f'--extractor-args "youtube:player_client=android,web"',
+        f'--extractor-args "youtube:player_client=web_safari,mweb" --impersonate chrome',
+        f'--extractor-args "youtube:player_client=ios,tv"',
+        f'--extractor-args "youtube:player_client=default" --impersonate chrome',
+        '',
+    ]
+    last_err = ""
+    for s in strategies:
+        try:
+            run(f'yt-dlp -f "{fmt}" --merge-output-format mp4 --no-playlist --retries 2 '
+                f'{js_arg} {s}{cookie_arg} -o "{out_tmpl}" "{url}"', timeout=420)
+        except RuntimeError as e:
+            last_err = str(e)
+            for f in UPLOADS.glob(f"{job_id}.*"):
+                f.unlink(missing_ok=True)
+            continue
+        for f in UPLOADS.glob(f"{job_id}.*"):
+            return f
+    if any(k in last_err for k in ("Precondition check failed", "Sign in to confirm", "only images are available",
+                                   "Requested format is not available", "bot")):
+        raise RuntimeError("YouTube tetap menolak semua cara download dari server (proteksi bot). "
+                           "Dua solusi: (1) isi kolom Cookies YouTube di halaman ini (file cookies.txt dari browser kamu yang sedang login YouTube), "
+                           "atau (2) download videonya di HP/komputer lalu pakai Upload File.")
+    raise RuntimeError("Download dari link gagal: " + last_err[-400:])

@@ -41,8 +41,17 @@ def clip():
         if url:
             if not any(x in url for x in ("youtube.com", "youtu.be", "tiktok.com")):
                 return jsonify(error="URL hanya YouTube / TikTok"), 400
+            cookies_path = None
+            if "cookies" in request.files and request.files["cookies"].filename:
+                cf = request.files["cookies"]
+                cookies_path = UPLOADS / f"{job_id}-cookies.txt"
+                cf.save(cookies_path)
             source_title = fetch_source_title(url)
-            src = download_youtube(url, job_id)
+            try:
+                src = download_youtube(url, job_id, cookies_path=str(cookies_path) if cookies_path else None)
+            finally:
+                if cookies_path:
+                    Path(cookies_path).unlink(missing_ok=True)  # cookies hanya dipakai sekali, langsung dihapus
         elif "file" in request.files and request.files["file"].filename:
             f = request.files["file"]
             name = secure_filename(f.filename) or "video.mp4"
