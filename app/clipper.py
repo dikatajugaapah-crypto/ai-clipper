@@ -73,7 +73,16 @@ def make_vertical_clip(src, start, duration, title="", out_name=None):
 
 def download_youtube(url, job_id):
     out_tmpl = str(UPLOADS / f"{job_id}.%(ext)s")
-    run(f'yt-dlp -f "bv*[height<=720]+ba/b[height<=720]" --merge-output-format mp4 -o "{out_tmpl}" "{url}"')
+    try:
+        run(f'yt-dlp -f "bv*[height<=720]+ba/b[height<=720]/b[height<=720]" --merge-output-format mp4 '
+            f'--no-playlist --retries 3 --extractor-args "youtube:player_client=android,web" '
+            f'-o "{out_tmpl}" "{url}"')
+    except RuntimeError as e:
+        msg = str(e)
+        if any(k in msg for k in ("Precondition check failed", "Sign in to confirm", "only images are available", "Requested format is not available")):
+            raise RuntimeError("YouTube menolak download dari IP server (proteksi bot YouTube). "
+                               "Solusinya: download video itu di HP/komputer kamu, lalu pakai tombol Upload File di halaman ini.")
+        raise RuntimeError("Download dari link gagal: " + msg[-400:])
     for f in UPLOADS.glob(f"{job_id}.*"):
         return f
-    raise RuntimeError("Download gagal")
+    raise RuntimeError("Download gagal: file tidak ditemukan")

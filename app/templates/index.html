@@ -38,7 +38,8 @@ document.getElementById('f').onsubmit=async e=>{
  s.textContent='⏳ Memproses... download, deteksi momen, render vertikal. Bisa 2-5 menit.'; r.innerHTML='';
  try{
   const res=await fetch('/api/clip',{method:'POST',body:new FormData(e.target)});
-  const d=await res.json();
+  const txt=await res.text();
+  let d; try{ d=JSON.parse(txt); }catch(_){ throw new Error('Server membalas tidak normal (HTTP '+res.status+'). Coba lagi sebentar, atau pakai Upload File.'); }
   if(!res.ok) throw new Error(d.error||'Gagal');
   s.textContent='✅ Selesai! Durasi sumber: '+d.duration+' detik';
   r.innerHTML=d.clips.map((c,i)=>`<div class="clip"><b>Klip ${i+1}</b> — mulai ${c.start}s<br><small>${c.label}</small><br><a href="${c.download}">⬇️ Download ${c.file}</a></div>`).join('');
