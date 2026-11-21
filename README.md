@@ -8,20 +8,24 @@ Tools potong video panjang jadi klip vertikal 9:16 (Shorts / Reels / TikTok) oto
 3. Momen terbaik dipotong, di-crop tengah ke 1080×1920, hook/judul dibakar di atas video
 4. Download hasil .mp4, siap upload
 
-## Deploy ke Render.com (gratis, ±5 menit)
+## Deploy ke Railway
 
-1. Push repo ini ke GitHub kamu:
-   ```bash
-   git init && git add . && git commit -m "AI Clipper v1"
-   git branch -M main
-   git remote add origin https://github.com/USERNAME/ai-clipper.git
-   git push -u origin main
-   ```
-2. Buka https://dashboard.render.com → **New + → Blueprint** → pilih repo ini
-   (Render otomatis membaca `render.yaml` + `Dockerfile`), atau **New Web Service → Docker**.
-3. Klik **Apply / Create** → tunggu build selesai → buka URL `https://ai-clipper-xxxx.onrender.com`
+Repo: https://github.com/dikatajugaapah-crypto/ai-clipper
 
-> Free tier: service sleep setelah ±15 menit idle, file hasil hilang saat restart. Cukup untuk demo & pemakaian pribadi ringan.
+Cara A — dari dashboard:
+1. Buka https://railway.com → **New Project → Deploy from GitHub repo** → pilih `ai-clipper`
+2. Railway otomatis memakai `Dockerfile` + `railway.json` (healthcheck `/health`)
+3. Di service → **Settings → Networking → Generate Domain** untuk dapat URL publik `https://ai-clipper-production-xxxx.up.railway.app`
+
+Cara B — dari CLI:
+```bash
+railway login
+railway init --name ai-clipper
+railway up
+railway domain
+```
+
+> Railway tidak lagi punya free tier permanen — ada trial credit untuk akun baru, setelah itu plan Hobby ±$5/bln (usage-based). File hasil clip hilang saat redeploy/restart (filesystem ephemeral).
 
 ## Jalan lokal
 

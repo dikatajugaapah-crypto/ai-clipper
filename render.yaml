@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: ai-clipper
-    env: docker
-    plan: free
-    dockerfilePath: ./Dockerfile
-    envVars:
-      - key: MAX_CLIP_SECONDS
-        value: "60"
