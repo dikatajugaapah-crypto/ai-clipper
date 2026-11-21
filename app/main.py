@@ -46,6 +46,28 @@ def clip():
                 cf = request.files["cookies"]
                 cookies_path = UPLOADS / f"{job_id}-cookies.txt"
                 cf.save(cookies_path)
+            else:
+                raw = (request.form.get("cookies_link") or "").strip()
+                if raw:
+                    cookies_path = UPLOADS / f"{job_id}-cookies.txt"
+                    if raw.startswith("http://") or raw.startswith("https://"):
+                        # Link cookie: ambil file cookies dari URL itu, sekali pakai
+                        import requests as _rq
+                        resp = _rq.get(raw, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+                        resp.raise_for_status()
+                        content = resp.content[:1024 * 1024]
+                        cookies_path.write_bytes(content)
+                    else:
+                        # Tempel isi cookies.txt / header Cookie langsung
+                        if "\t" not in raw and "=" in raw and "youtube" not in raw:
+                            lines = ["# Netscape HTTP Cookie File"]
+                            for pair in raw.replace(";", "\n").splitlines():
+                                pair = pair.strip()
+                                if "=" in pair:
+                                    k, v = pair.split("=", 1)
+                                    lines.append(f".youtube.com\tTRUE\t/\tTRUE\t0\t{k.strip()}\t{v.strip()}")
+                            raw = "\n".join(lines)
+                        cookies_path.write_text(raw, encoding="utf-8", errors="ignore")
             source_title = fetch_source_title(url)
             try:
                 src = download_youtube(url, job_id, cookies_path=str(cookies_path) if cookies_path else None)

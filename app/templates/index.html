@@ -23,8 +23,11 @@ small{color:#999}
 <input name="url" placeholder="https://www.youtube.com/watch?v=...">
 <label>atau Upload Video (mp4, maks 500MB)</label>
 <input type="file" name="file" accept="video/*">
-<label>Cookies YouTube (opsional — hanya kalau link ditolak YouTube; file cookies.txt, dipakai sekali lalu dihapus dari server)</label>
+<label>🔗 Link Cookie YouTube (opsional — hanya kalau link ditolak YouTube. Tempel <b>link file cookies.txt</b> kamu, atau tempel isi cookies-nya langsung. Dipakai sekali lalu dihapus dari server)</label>
+<input name="cookies_link" placeholder="https://.../cookies.txt  ATAU  tempel isi cookie di sini">
+<label>atau Upload File Cookies (cookies.txt)</label>
 <input type="file" name="cookies" accept=".txt">
+<p><small>Cara dapat cookies: pakai ekstensi <a href="https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" rel="noopener">Get cookies.txt LOCALLY</a> di Chrome sambil login <a href="https://www.youtube.com" target="_blank" rel="noopener">youtube.com</a>, klik Export, lalu upload file-nya di sini / hosting file-nya dan tempel link-nya di atas.</small></p>
 <div class="row">
 <div><label>Durasi klip (detik)</label><input name="clip_len" type="number" value="45" min="15" max="90"></div>
 <div><label>Jumlah klip</label><input name="top_n" type="number" value="3" min="1" max="5"></div>
